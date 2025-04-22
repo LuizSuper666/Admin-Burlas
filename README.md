@@ -6,18 +6,25 @@ local targetPlayer = nil  -- Jogador alvo selecionado
 
 -- Função para ajustar a interface para celular (tamanho da tela e interação por toque)
 local function ajustarUIParaCelular()
-    local screenSize = game:GetService("Workspace").CurrentCamera.ViewportSize
-    local buttonSize = UDim2.new(0, screenSize.X / 4, 0, 50) -- Ajuste o tamanho dos botões para celular
+    -- Verifique se os elementos da interface existem antes de tentar alterá-los
+    if buttonAcionar and buttonRepetir and buttonDefesa and buttonUseless then
+        local screenSize = game:GetService("Workspace").CurrentCamera.ViewportSize
+        local buttonSize = UDim2.new(0, screenSize.X / 4, 0, 50) -- Ajuste o tamanho dos botões para celular
 
-    -- Ajuste os botões para tamanhos mais apropriados para celular
-    buttonAcionar.Size = buttonSize
-    buttonRepetir.Size = buttonSize
-    buttonDefesa.Size = buttonSize
-    buttonUseless.Size = buttonSize
+        -- Ajuste os botões para tamanhos mais apropriados para celular
+        buttonAcionar.Size = buttonSize
+        buttonRepetir.Size = buttonSize
+        buttonDefesa.Size = buttonSize
+        buttonUseless.Size = buttonSize
 
-    -- Ajuste o tamanho dos campos de entrada de texto
-    nickInput.Size = UDim2.new(0, screenSize.X - 40, 0, 50)
-    commandInput.Size = UDim2.new(0, screenSize.X - 40, 0, 50)
+        -- Ajuste o tamanho dos campos de entrada de texto
+        if nickInput and commandInput then
+            nickInput.Size = UDim2.new(0, screenSize.X - 40, 0, 50)
+            commandInput.Size = UDim2.new(0, screenSize.X - 40, 0, 50)
+        end
+    else
+        warn("Alguns botões ou campos de entrada não foram encontrados!")
+    end
 end
 
 -- Chama a função para ajustar a UI ao iniciar
