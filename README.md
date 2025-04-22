@@ -1,87 +1,27 @@
--- Definir as variáveis iniciais
-local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
-
--- Criar a interface (GUI)
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = player.PlayerGui
-
-local frame = Instance.new("Frame")
-frame.Parent = screenGui
-frame.Size = UDim2.new(0, 400, 0, 350)
-frame.Position = UDim2.new(0.5, -200, 0.5, -175)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BackgroundTransparency = 0.5
-frame.BorderSizePixel = 0
-frame.AnchorPoint = Vector2.new(0.5, 0.5)
-
--- Caixa de texto para digitar o Nick
-local nickInput = Instance.new("TextBox")
-nickInput.Parent = frame
-nickInput.Size = UDim2.new(0, 300, 0, 40)
-nickInput.Position = UDim2.new(0.5, -150, 0, 20)
-nickInput.PlaceholderText = "Digite o Nick do Jogador"
-nickInput.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-nickInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-nickInput.BorderRadius = UDim.new(0, 10)
-
--- Caixa de texto para digitar o Comando
-local commandInput = Instance.new("TextBox")
-commandInput.Parent = frame
-commandInput.Size = UDim2.new(0, 300, 0, 40)
-commandInput.Position = UDim2.new(0.5, -150, 0, 80)
-commandInput.PlaceholderText = "Digite o Comando"
-commandInput.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-commandInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-commandInput.BorderRadius = UDim.new(0, 10)
-
--- Texto para mostrar o último comando usado
-local lastCommandText = Instance.new("TextLabel")
-lastCommandText.Parent = frame
-lastCommandText.Size = UDim2.new(0, 300, 0, 40)
-lastCommandText.Position = UDim2.new(0.5, -150, 0, 250)
-lastCommandText.Text = "Último Comando: Nenhum"
-lastCommandText.TextColor3 = Color3.fromRGB(255, 255, 255)
-lastCommandText.BackgroundTransparency = 1
-
--- Botões de Comando
-local buttonAcionar = Instance.new("TextButton")
-buttonAcionar.Parent = frame
-buttonAcionar.Size = UDim2.new(0, 120, 0, 40)
-buttonAcionar.Position = UDim2.new(0.5, -150, 0, 130)
-buttonAcionar.Text = "Acionar"
-buttonAcionar.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-buttonAcionar.BorderRadius = UDim.new(0, 10)
-
-local buttonRepetir = Instance.new("TextButton")
-buttonRepetir.Parent = frame
-buttonRepetir.Size = UDim2.new(0, 120, 0, 40)
-buttonRepetir.Position = UDim2.new(0.5, 30, 0, 130)
-buttonRepetir.Text = "Repetir Infinitamente"
-buttonRepetir.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-buttonRepetir.BorderRadius = UDim.new(0, 10)
-
-local buttonDefesa = Instance.new("TextButton")
-buttonDefesa.Parent = frame
-buttonDefesa.Size = UDim2.new(0, 120, 0, 40)
-buttonDefesa.Position = UDim2.new(0.5, -150, 0, 180)
-buttonDefesa.Text = "Defesa Absoluta"
-buttonDefesa.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
-buttonDefesa.BorderRadius = UDim.new(0, 10)
-
--- Novo Botão para o Comando 'useless'
-local buttonUseless = Instance.new("TextButton")
-buttonUseless.Parent = frame
-buttonUseless.Size = UDim2.new(0, 120, 0, 40)
-buttonUseless.Position = UDim2.new(0.5, 30, 0, 180)
-buttonUseless.Text = "Useless"
-buttonUseless.BackgroundColor3 = Color3.fromRGB(128, 0, 128)
-buttonUseless.BorderRadius = UDim.new(0, 10)
-
 -- Variáveis de Controle
 local repeating = false
 local defesaAtiva = false
-local uselessActive = false
+local uselessMode = false
+local targetPlayer = nil  -- Jogador alvo selecionado
+
+-- Função para ajustar a interface para celular (tamanho da tela e interação por toque)
+local function ajustarUIParaCelular()
+    local screenSize = game:GetService("Workspace").CurrentCamera.ViewportSize
+    local buttonSize = UDim2.new(0, screenSize.X / 4, 0, 50) -- Ajuste o tamanho dos botões para celular
+
+    -- Ajuste os botões para tamanhos mais apropriados para celular
+    buttonAcionar.Size = buttonSize
+    buttonRepetir.Size = buttonSize
+    buttonDefesa.Size = buttonSize
+    buttonUseless.Size = buttonSize
+
+    -- Ajuste o tamanho dos campos de entrada de texto
+    nickInput.Size = UDim2.new(0, screenSize.X - 40, 0, 50)
+    commandInput.Size = UDim2.new(0, screenSize.X - 40, 0, 50)
+end
+
+-- Chama a função para ajustar a UI ao iniciar
+ajustarUIParaCelular()
 
 -- Função para Acionar Comando
 buttonAcionar.MouseButton1Click:Connect(function()
@@ -89,39 +29,36 @@ buttonAcionar.MouseButton1Click:Connect(function()
     local command = commandInput.Text
     local executorName = player.Name -- Nome do jogador que está executando o comando
 
+    -- Verifica se o modo "Useless" está ativado na pessoa escolhida
+    if uselessMode and targetPlayer and targetPlayer.Name == playerName then
+        lastCommandText.Text = "O jogador está no modo Useless! Comandos desativados para ele."
+        return
+    end
+
     -- Verifica se o nome do jogador existe
-    local targetPlayer = game.Players:FindFirstChild(playerName)
-    if targetPlayer then
+    local selectedPlayer = game.Players:FindFirstChild(playerName)
+    if selectedPlayer then
         -- Mostra qual comando foi acionado
-        lastCommandText.Text = "Último Comando: " .. command .. " de " .. executorName .. " em " .. targetPlayer.Name
+        lastCommandText.Text = "Último Comando: " .. command .. " de " .. executorName .. " em " .. selectedPlayer.Name
         -- Ação para o comando
         if command:lower() == "explode" then
             -- Explode o jogador
             local explosion = Instance.new("Explosion")
-            explosion.Position = targetPlayer.Character.HumanoidRootPart.Position
+            explosion.Position = selectedPlayer.Character.HumanoidRootPart.Position
             explosion.Parent = game.Workspace
         elseif command:lower() == "kick" then
             -- Expulsa o jogador
-            targetPlayer:Kick("Você foi expulso pelo administrador!")
+            selectedPlayer:Kick("Você foi expulso pelo administrador!")
         elseif command:lower() == "freeze" then
             -- Congela o jogador
-            if targetPlayer.Character then
-                targetPlayer.Character.HumanoidRootPart.Anchored = true
+            if selectedPlayer.Character then
+                selectedPlayer.Character.HumanoidRootPart.Anchored = true
             end
         elseif command:lower() == "unfreeze" then
             -- Descongela o jogador
-            if targetPlayer.Character then
-                targetPlayer.Character.HumanoidRootPart.Anchored = false
+            if selectedPlayer.Character then
+                selectedPlayer.Character.HumanoidRootPart.Anchored = false
             end
-        elseif command:lower() == "useless" then
-            -- Ativa o comando "useless"
-            uselessActive = true
-            -- Bloqueia ações do jogador
-            if targetPlayer.Character then
-                targetPlayer.Character:FindFirstChild("Humanoid"):SetStateEnabled(Enum.HumanoidStateType.Physics, false) -- Impede ações
-                targetPlayer.Character:FindFirstChild("Humanoid"):SetStateEnabled(Enum.HumanoidStateType.Dead, false) -- Impede morrer
-            end
-            lastCommandText.Text = targetPlayer.Name .. " foi bloqueado com o comando 'useless'."
         end
     else
         lastCommandText.Text = "Jogador não encontrado!"
@@ -134,41 +71,39 @@ buttonRepetir.MouseButton1Click:Connect(function()
     if repeating then
         buttonRepetir.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
         while repeating do
+            -- Verifica se o modo "Useless" está ativado na pessoa escolhida
+            if uselessMode and targetPlayer then
+                lastCommandText.Text = "O jogador está no modo Useless! Comandos desativados para ele."
+                break
+            end
+            
             -- Execute o comando repetidamente (sem delay)
             local playerName = nickInput.Text
             local command = commandInput.Text
-            local targetPlayer = game.Players:FindFirstChild(playerName)
+            local selectedPlayer = game.Players:FindFirstChild(playerName)
             local executorName = player.Name -- Nome do jogador que está executando o comando
-            if targetPlayer then
+            if selectedPlayer then
                 -- Mostra qual comando foi acionado
-                lastCommandText.Text = "Último Comando: " .. command .. " de " .. executorName .. " em " .. targetPlayer.Name
+                lastCommandText.Text = "Último Comando: " .. command .. " de " .. executorName .. " em " .. selectedPlayer.Name
                 -- Ação para o comando
                 if command:lower() == "explode" then
                     -- Explode o jogador repetidamente
                     local explosion = Instance.new("Explosion")
-                    explosion.Position = targetPlayer.Character.HumanoidRootPart.Position
+                    explosion.Position = selectedPlayer.Character.HumanoidRootPart.Position
                     explosion.Parent = game.Workspace
                 elseif command:lower() == "kick" then
                     -- Expulsa o jogador repetidamente
-                    targetPlayer:Kick("Você foi expulso pelo administrador!")
+                    selectedPlayer:Kick("Você foi expulso pelo administrador!")
                 elseif command:lower() == "freeze" then
                     -- Congela o jogador repetidamente
-                    if targetPlayer.Character then
-                        targetPlayer.Character.HumanoidRootPart.Anchored = true
+                    if selectedPlayer.Character then
+                        selectedPlayer.Character.HumanoidRootPart.Anchored = true
                     end
                 elseif command:lower() == "unfreeze" then
                     -- Descongela o jogador repetidamente
-                    if targetPlayer.Character then
-                        targetPlayer.Character.HumanoidRootPart.Anchored = false
+                    if selectedPlayer.Character then
+                        selectedPlayer.Character.HumanoidRootPart.Anchored = false
                     end
-                elseif command:lower() == "useless" then
-                    -- Impede o jogador de executar qualquer comando
-                    uselessActive = true
-                    -- Bloqueia ações do jogador
-                    if targetPlayer.Character then
-                        targetPlayer.Character:FindFirstChild("Humanoid"):SetStateEnabled(Enum.HumanoidStateType.Physics, false)
-                    end
-                    lastCommandText.Text = targetPlayer.Name .. " foi bloqueado com o comando 'useless'."
                 end
             end
             wait(1) -- Espera 1 segundo antes de repetir
@@ -192,5 +127,45 @@ buttonDefesa.MouseButton1Click:Connect(function()
         end
     else
         buttonDefesa.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+        lastCommandText.Text = "Defesa Absoluta Desativada!"
+    end
+end)
+
+-- Função para Ativar o Modo Useless
+buttonUseless.MouseButton1Click:Connect(function()
+    uselessMode = not uselessMode
+    local playerName = nickInput.Text
+    targetPlayer = game.Players:FindFirstChild(playerName)
+
+    if targetPlayer then
+        if uselessMode then
+            -- Desativa as interações do jogador
+            targetPlayer.Character.HumanoidRootPart.Anchored = true
+            targetPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 0
+            targetPlayer.Character:FindFirstChildOfClass("Humanoid").JumpHeight = 0
+
+            -- Impede o jogador de pegar itens
+            targetPlayer.Character:FindFirstChildOfClass("Humanoid").CanPickupItems = false
+
+            -- Impede a morte ou reinício
+            targetPlayer.Character:FindFirstChildOfClass("Humanoid").Died:Connect(function()
+                -- Reage à morte de forma que não permita a reinicialização ou mortes
+                targetPlayer.Character:BreakJoints()
+            end)
+
+            lastCommandText.Text = playerName .. " está no modo Useless. Ele não pode usar comandos."
+        else
+            -- Restaura as interações do jogador
+            targetPlayer.Character.HumanoidRootPart.Anchored = false
+            targetPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16
+            targetPlayer.Character:FindFirstChildOfClass("Humanoid").JumpHeight = 50
+
+            -- Restaura a capacidade de pegar itens
+            targetPlayer.Character:FindFirstChildOfClass("Humanoid").CanPickupItems = true
+
+            lastCommandText.Text = playerName .. " está livre para jogar novamente."
+        end
+    else
+        lastCommandText.Text = "Jogador não encontrado!"
     end
 end)
