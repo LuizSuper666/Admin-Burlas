@@ -1,178 +1,151 @@
--- Variáveis de Controle
+-- Inicializa variáveis de controle
 local repeating = false
 local defesaAtiva = false
 local uselessMode = false
 local targetPlayer = nil  -- Jogador alvo selecionado
 
--- Função para ajustar a interface para celular (tamanho da tela e interação por toque)
-local function ajustarUIParaCelular()
-    -- Verifique se os elementos da interface existem antes de tentar alterá-los
-    if buttonAcionar and buttonRepetir and buttonDefesa and buttonUseless then
-        local screenSize = game:GetService("Workspace").CurrentCamera.ViewportSize
-        local buttonSize = UDim2.new(0, screenSize.X / 4, 0, 50) -- Ajuste o tamanho dos botões para celular
+-- Função para verificar e pegar os elementos de interface
+local function verificarElementosDeInterface()
+    print("Verificando elementos de interface...")
+    -- Tente encontrar os elementos da interface
+    local buttonAcionar = script.Parent:FindFirstChild("ButtonAcionar")
+    local buttonRepetir = script.Parent:FindFirstChild("ButtonRepetir")
+    local buttonDefesa = script.Parent:FindFirstChild("ButtonDefesa")
+    local buttonUseless = script.Parent:FindFirstChild("ButtonUseless")
+    local nickInput = script.Parent:FindFirstChild("NickInput")
+    local commandInput = script.Parent:FindFirstChild("CommandInput")
+    local lastCommandText = script.Parent:FindFirstChild("LastCommandText")
 
-        -- Ajuste os botões para tamanhos mais apropriados para celular
+    -- Verificar se os botões e campos existem
+    if not buttonAcionar then print("Botão 'ButtonAcionar' não encontrado!") end
+    if not buttonRepetir then print("Botão 'ButtonRepetir' não encontrado!") end
+    if not buttonDefesa then print("Botão 'ButtonDefesa' não encontrado!") end
+    if not buttonUseless then print("Botão 'ButtonUseless' não encontrado!") end
+    if not nickInput then print("Campo de input 'NickInput' não encontrado!") end
+    if not commandInput then print("Campo de input 'CommandInput' não encontrado!") end
+    if not lastCommandText then print("Campo de texto 'LastCommandText' não encontrado!") end
+
+    return buttonAcionar, buttonRepetir, buttonDefesa, buttonUseless, nickInput, commandInput, lastCommandText
+end
+
+-- Função para ajustar a interface para celular
+local function ajustarUIParaCelular(buttonAcionar, buttonRepetir, buttonDefesa, buttonUseless, nickInput, commandInput)
+    if buttonAcionar and buttonRepetir and buttonDefesa and buttonUseless then
+        -- Ajuste o tamanho dos botões
+        local screenSize = game:GetService("Workspace").CurrentCamera.ViewportSize
+        local buttonSize = UDim2.new(0, screenSize.X / 4, 0, 50)  -- Ajuste o tamanho para celular
+
+        -- Ajustar o tamanho dos botões para celulares
         buttonAcionar.Size = buttonSize
         buttonRepetir.Size = buttonSize
         buttonDefesa.Size = buttonSize
         buttonUseless.Size = buttonSize
 
-        -- Ajuste o tamanho dos campos de entrada de texto
+        -- Ajustar tamanho dos campos de entrada de texto
         if nickInput and commandInput then
             nickInput.Size = UDim2.new(0, screenSize.X - 40, 0, 50)
             commandInput.Size = UDim2.new(0, screenSize.X - 40, 0, 50)
         end
     else
-        warn("Alguns botões ou campos de entrada não foram encontrados!")
+        print("Alguns botões ou campos de entrada não foram encontrados!")
     end
 end
 
--- Chama a função para ajustar a UI ao iniciar
-ajustarUIParaCelular()
-
--- Função para Acionar Comando
-buttonAcionar.MouseButton1Click:Connect(function()
-    local playerName = nickInput.Text
-    local command = commandInput.Text
-    local executorName = player.Name -- Nome do jogador que está executando o comando
-
-    -- Verifica se o modo "Useless" está ativado na pessoa escolhida
-    if uselessMode and targetPlayer and targetPlayer.Name == playerName then
-        lastCommandText.Text = "O jogador está no modo Useless! Comandos desativados para ele."
-        return
-    end
-
-    -- Verifica se o nome do jogador existe
-    local selectedPlayer = game.Players:FindFirstChild(playerName)
-    if selectedPlayer then
-        -- Mostra qual comando foi acionado
-        lastCommandText.Text = "Último Comando: " .. command .. " de " .. executorName .. " em " .. selectedPlayer.Name
-        -- Ação para o comando
-        if command:lower() == "explode" then
-            -- Explode o jogador
-            local explosion = Instance.new("Explosion")
-            explosion.Position = selectedPlayer.Character.HumanoidRootPart.Position
-            explosion.Parent = game.Workspace
-        elseif command:lower() == "kick" then
-            -- Expulsa o jogador
-            selectedPlayer:Kick("Você foi expulso pelo administrador!")
-        elseif command:lower() == "freeze" then
-            -- Congela o jogador
-            if selectedPlayer.Character then
-                selectedPlayer.Character.HumanoidRootPart.Anchored = true
-            end
-        elseif command:lower() == "unfreeze" then
-            -- Descongela o jogador
-            if selectedPlayer.Character then
-                selectedPlayer.Character.HumanoidRootPart.Anchored = false
-            end
-        end
-    else
-        lastCommandText.Text = "Jogador não encontrado!"
-    end
-end)
-
--- Função para Repetir Comando Infinitamente
-buttonRepetir.MouseButton1Click:Connect(function()
-    repeating = not repeating
-    if repeating then
-        buttonRepetir.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-        while repeating do
-            -- Verifica se o modo "Useless" está ativado na pessoa escolhida
-            if uselessMode and targetPlayer then
-                lastCommandText.Text = "O jogador está no modo Useless! Comandos desativados para ele."
-                break
-            end
-            
-            -- Execute o comando repetidamente (sem delay)
+-- Função para lidar com o clique do botão Acionar
+local function acionarComando(buttonAcionar, nickInput, commandInput, lastCommandText)
+    if buttonAcionar then
+        buttonAcionar.MouseButton1Click:Connect(function()
             local playerName = nickInput.Text
             local command = commandInput.Text
+
+            -- Verificar se o comando e jogador são válidos
             local selectedPlayer = game.Players:FindFirstChild(playerName)
-            local executorName = player.Name -- Nome do jogador que está executando o comando
             if selectedPlayer then
-                -- Mostra qual comando foi acionado
-                lastCommandText.Text = "Último Comando: " .. command .. " de " .. executorName .. " em " .. selectedPlayer.Name
-                -- Ação para o comando
+                -- Mostrar qual comando foi acionado
+                lastCommandText.Text = "Último Comando: " .. command .. " em " .. selectedPlayer.Name
+                -- Lógica do comando
                 if command:lower() == "explode" then
-                    -- Explode o jogador repetidamente
                     local explosion = Instance.new("Explosion")
                     explosion.Position = selectedPlayer.Character.HumanoidRootPart.Position
                     explosion.Parent = game.Workspace
                 elseif command:lower() == "kick" then
-                    -- Expulsa o jogador repetidamente
                     selectedPlayer:Kick("Você foi expulso pelo administrador!")
                 elseif command:lower() == "freeze" then
-                    -- Congela o jogador repetidamente
-                    if selectedPlayer.Character then
-                        selectedPlayer.Character.HumanoidRootPart.Anchored = true
-                    end
+                    selectedPlayer.Character.HumanoidRootPart.Anchored = true
                 elseif command:lower() == "unfreeze" then
-                    -- Descongela o jogador repetidamente
-                    if selectedPlayer.Character then
-                        selectedPlayer.Character.HumanoidRootPart.Anchored = false
-                    end
+                    selectedPlayer.Character.HumanoidRootPart.Anchored = false
                 end
+            else
+                lastCommandText.Text = "Jogador não encontrado!"
             end
-            wait(1) -- Espera 1 segundo antes de repetir
-        end
+        end)
     else
-        buttonRepetir.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        print("Botão 'ButtonAcionar' não encontrado para associar evento.")
     end
-end)
+end
 
--- Função para Ativar Defesa Absoluta
-buttonDefesa.MouseButton1Click:Connect(function()
-    defesaAtiva = not defesaAtiva
-    if defesaAtiva then
-        buttonDefesa.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-        -- Impede ações de outros jogadores em você
-        local playerName = nickInput.Text
-        if playerName == player.Name then
-            -- Comandos de outros jogadores não irão funcionar em você
-            -- Exemplo: "explode" ou "kick" não funcionará em você
-            lastCommandText.Text = "Defesa Absoluta Ativada!"
-        end
+-- Função para lidar com o botão Repetir
+local function repetirAcao(buttonRepetir)
+    if buttonRepetir then
+        buttonRepetir.MouseButton1Click:Connect(function()
+            repeating = not repeating
+            if repeating then
+                print("Ação repetida ativada.")
+            else
+                print("Ação repetida desativada.")
+            end
+        end)
     else
-        buttonDefesa.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
-        lastCommandText.Text = "Defesa Absoluta Desativada!"
+        print("Botão 'ButtonRepetir' não encontrado para associar evento.")
     end
-end)
+end
 
--- Função para Ativar o Modo Useless
-buttonUseless.MouseButton1Click:Connect(function()
-    uselessMode = not uselessMode
-    local playerName = nickInput.Text
-    targetPlayer = game.Players:FindFirstChild(playerName)
-
-    if targetPlayer then
-        if uselessMode then
-            -- Desativa as interações do jogador
-            targetPlayer.Character.HumanoidRootPart.Anchored = true
-            targetPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 0
-            targetPlayer.Character:FindFirstChildOfClass("Humanoid").JumpHeight = 0
-
-            -- Impede o jogador de pegar itens
-            targetPlayer.Character:FindFirstChildOfClass("Humanoid").CanPickupItems = false
-
-            -- Impede a morte ou reinício
-            targetPlayer.Character:FindFirstChildOfClass("Humanoid").Died:Connect(function()
-                -- Reage à morte de forma que não permita a reinicialização ou mortes
-                targetPlayer.Character:BreakJoints()
-            end)
-
-            lastCommandText.Text = playerName .. " está no modo Useless. Ele não pode usar comandos."
-        else
-            -- Restaura as interações do jogador
-            targetPlayer.Character.HumanoidRootPart.Anchored = false
-            targetPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16
-            targetPlayer.Character:FindFirstChildOfClass("Humanoid").JumpHeight = 50
-
-            -- Restaura a capacidade de pegar itens
-            targetPlayer.Character:FindFirstChildOfClass("Humanoid").CanPickupItems = true
-
-            lastCommandText.Text = playerName .. " está livre para jogar novamente."
-        end
+-- Função para lidar com a ativação da defesa
+local function ativarDefesa(buttonDefesa)
+    if buttonDefesa then
+        buttonDefesa.MouseButton1Click:Connect(function()
+            defesaAtiva = not defesaAtiva
+            if defesaAtiva then
+                print("Defesa ativada.")
+            else
+                print("Defesa desativada.")
+            end
+        end)
     else
-        lastCommandText.Text = "Jogador não encontrado!"
+        print("Botão 'ButtonDefesa' não encontrado para associar evento.")
     end
-end)
+end
+
+-- Função para lidar com o modo inutilizado
+local function ativarModoUseless(buttonUseless)
+    if buttonUseless then
+        buttonUseless.MouseButton1Click:Connect(function()
+            uselessMode = not uselessMode
+            if uselessMode then
+                print("Modo inutilizado ativado.")
+            else
+                print("Modo inutilizado desativado.")
+            end
+        end)
+    else
+        print("Botão 'ButtonUseless' não encontrado para associar evento.")
+    end
+end
+
+-- Verificar e pegar os elementos da interface
+local buttonAcionar, buttonRepetir, buttonDefesa, buttonUseless, nickInput, commandInput, lastCommandText = verificarElementosDeInterface()
+
+-- Ajustar a interface para dispositivos móveis
+ajustarUIParaCelular(buttonAcionar, buttonRepetir, buttonDefesa, buttonUseless, nickInput, commandInput)
+
+-- Lidar com o comando de acionar
+acionarComando(buttonAcionar, nickInput, commandInput, lastCommandText)
+
+-- Lidar com o botão de repetir
+repetirAcao(buttonRepetir)
+
+-- Lidar com o botão de defesa
+ativarDefesa(buttonDefesa)
+
+-- Lidar com o botão de inutilizar
+ativarModoUseless(buttonUseless)
